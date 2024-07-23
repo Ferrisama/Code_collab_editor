@@ -1,61 +1,63 @@
 import React, { useState, useEffect } from "react";
-import CodeMirror from "@uiw/react-codemirror";
-import { javascript } from "@codemirror/lang-javascript";
-import io from "socket.io-client";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "./firebase";
 import Login from "./components/Login";
 import Register from "./components/Register";
-
-const socket = io("http://localhost:5000");
+import ProjectManager from "./components/ProjectManager";
+import CollaborativeEditor from "./components/CollaborativeEditor";
 
 function App() {
-  const [code, setCode] = useState('console.log("Hello, World!");');
-  const [token, setToken] = useState(localStorage.getItem("token"));
-  const roomId = "demo-room"; // In a real app, this would be dynamic
+  const [user, setUser] = useState(null);
+  const [currentProject, setCurrentProject] = useState(null);
 
   useEffect(() => {
-    if (token) {
-      localStorage.setItem("token", token);
-      socket.emit("joinRoom", roomId);
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setUser(user);
+      } else {
+        setUser(null);
+        setCurrentProject(null);
+      }
+    });
 
-      socket.on("codeUpdate", (updatedCode) => {
-        setCode(updatedCode);
-      });
-    }
+    return () => unsubscribe();
+  }, []);
 
-    return () => {
-      socket.off("codeUpdate");
-    };
-  }, [token]);
-
-  const handleChange = (value) => {
-    setCode(value);
-    socket.emit("codeChange", { roomId, code: value });
+  const handleLogout = () => {
+    auth.signOut();
   };
 
-  if (!token) {
+  if (!user) {
     return (
-      <div>
-        <h1>Collaborative Code Editor</h1>
-        <Login setToken={setToken} />
-        <Register setToken={setToken} />
+      <div className="container mx-auto p-4">
+        <h1 className="text-3xl font-bold mb-4">Collaborative Code Editor</h1>
+        <div className="flex space-x-4">
+          <Login />
+          <Register />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="App">
-      <h1>Collaborative Code Editor</h1>
-      <CodeMirror
-        value={code}
-        height="400px"
-        extensions={[javascript({ jsx: true })]}
-        onChange={handleChange}
-      />
+    <div className="container mx-auto p-4">
+      <h1 className="text-3xl font-bold mb-4">Collaborative Code Editor</h1>
+      <p>Logged in as: {user.email}</p>
+      <div className="flex">
+        <div className="w-1/4 pr-4">
+          <ProjectManager user={user} setCurrentProject={setCurrentProject} />
+        </div>
+        <div className="w-3/4">
+          {currentProject ? (
+            <CollaborativeEditor user={user} project={currentProject} />
+          ) : (
+            <p className="text-gray-500">Select a project to start editing</p>
+          )}
+        </div>
+      </div>
       <button
-        onClick={() => {
-          localStorage.removeItem("token");
-          setToken(null);
-        }}
+        onClick={handleLogout}
+        className="mt-4 bg-red-500 text-white px-4 py-2 rounded"
       >
         Logout
       </button>

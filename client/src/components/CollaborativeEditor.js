@@ -1,0 +1,120 @@
+import React, { useState, useEffect, useRef } from "react";
+import {
+  getFirestore,
+  doc,
+  onSnapshot,
+  updateDoc,
+  collection,
+  setDoc,
+} from "firebase/firestore";
+import CodeMirror from "@uiw/react-codemirror";
+import { javascript } from "@codemirror/lang-javascript";
+
+function CollaborativeEditor({ user, project }) {
+  const [code, setCode] = useState(project.content || "");
+  const [users, setUsers] = useState([]);
+  const editorRef = useRef(null);
+
+  useEffect(() => {
+    const db = getFirestore();
+    const projectRef = doc(db, "projects", project.id);
+    const usersRef = collection(db, "projects", project.id, "users");
+
+    const unsubscribeProject = onSnapshot(projectRef, (doc) => {
+      if (doc.exists()) {
+        setCode(doc.data().content || "");
+      }
+    });
+
+    const unsubscribeUsers = onSnapshot(usersRef, (snapshot) => {
+      const activeUsers = snapshot.docs.map((doc) => doc.data());
+      setUsers(activeUsers);
+    });
+
+    // Set user presence
+    setDoc(
+      doc(usersRef, user.uid),
+      {
+        id: user.uid,
+        email: user.email,
+        lastSeen: new Date(),
+      },
+      { merge: true }
+    );
+
+    // Remove user when they leave
+    return () => {
+      unsubscribeProject();
+      unsubscribeUsers();
+      updateDoc(doc(usersRef, user.uid), { lastSeen: null });
+    };
+  }, [project.id, user]);
+
+  const handleChange = (value) => {
+    setCode(value);
+    const db = getFirestore();
+    const projectRef = doc(db, "projects", project.id);
+    updateDoc(projectRef, { content: value });
+  };
+
+  const handleCursorActivity = (editor) => {
+    const cursor = editor.getCursor();
+    const db = getFirestore();
+    const userRef = doc(db, "projects", project.id, "users", user.uid);
+    updateDoc(userRef, { cursor: { line: cursor.line, ch: cursor.ch } });
+  };
+
+  // Add this useEffect for cursor markers
+  useEffect(() => {
+    if (editorRef.current) {
+      const editor = editorRef.current.view;
+      const markers = {};
+
+      users.forEach((user) => {
+        if (user.id !== user.uid && user.cursor) {
+          const { line, ch } = user.cursor;
+          const pos = editor.coordsAtPos(
+            editor.state.doc.line(line + 1).from + ch
+          );
+          if (pos) {
+            const marker = document.createElement("div");
+            marker.className = "remote-cursor";
+            marker.style.left = `${pos.left}px`;
+            marker.style.top = `${pos.top}px`;
+            marker.setAttribute("title", user.email);
+            editor.dom.appendChild(marker);
+            markers[user.id] = marker;
+          }
+        }
+      });
+
+      return () => {
+        Object.values(markers).forEach((marker) => marker.remove());
+      };
+    }
+  }, [users, user.uid]);
+
+  return (
+    <div>
+      <h2 className="text-2xl font-bold mb-4">{project.name}</h2>
+      <div className="mb-4">
+        <h3 className="text-lg font-semibold">Active Users:</h3>
+        <ul>
+          {users.map((user) => (
+            <li key={user.id}>{user.email}</li>
+          ))}
+        </ul>
+      </div>
+      <CodeMirror
+        value={code}
+        height="400px"
+        extensions={[javascript({ jsx: true })]}
+        onChange={handleChange}
+        onCursor={handleCursorActivity}
+        ref={editorRef}
+      />
+    </div>
+  );
+}
+
+export default CollaborativeEditor;
