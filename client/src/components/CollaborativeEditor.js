@@ -13,6 +13,8 @@ import { javascript } from "@codemirror/lang-javascript";
 function CollaborativeEditor({ user, project }) {
   const [code, setCode] = useState(project.content || "");
   const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const editorRef = useRef(null);
 
   useEffect(() => {
@@ -20,16 +22,34 @@ function CollaborativeEditor({ user, project }) {
     const projectRef = doc(db, "projects", project.id);
     const usersRef = collection(db, "projects", project.id, "users");
 
-    const unsubscribeProject = onSnapshot(projectRef, (doc) => {
-      if (doc.exists()) {
-        setCode(doc.data().content || "");
-      }
-    });
+    setLoading(true);
+    setError("");
 
-    const unsubscribeUsers = onSnapshot(usersRef, (snapshot) => {
-      const activeUsers = snapshot.docs.map((doc) => doc.data());
-      setUsers(activeUsers);
-    });
+    const unsubscribeProject = onSnapshot(
+      projectRef,
+      (doc) => {
+        if (doc.exists()) {
+          setCode(doc.data().content || "");
+          setLoading(false);
+        }
+      },
+      (err) => {
+        console.error("Error fetching project:", err);
+        setError("Failed to load project. Please try again.");
+        setLoading(false);
+      }
+    );
+
+    const unsubscribeUsers = onSnapshot(
+      usersRef,
+      (snapshot) => {
+        const activeUsers = snapshot.docs.map((doc) => doc.data());
+        setUsers(activeUsers);
+      },
+      (err) => {
+        console.error("Error fetching users:", err);
+      }
+    );
 
     // Set user presence
     setDoc(
@@ -97,6 +117,8 @@ function CollaborativeEditor({ user, project }) {
   return (
     <div className="bg-white p-6 rounded-lg shadow">
       <h2 className="text-2xl font-bold mb-4 text-gray-800">{project.name}</h2>
+      {loading && <p className="text-gray-600">Loading editor...</p>}
+      {error && <p className="text-red-500 mb-4">{error}</p>}
       <div className="mb-4">
         <h3 className="text-lg font-semibold text-gray-700">Active Users:</h3>
         <ul className="list-disc list-inside">
@@ -107,14 +129,16 @@ function CollaborativeEditor({ user, project }) {
           ))}
         </ul>
       </div>
-      <CodeMirror
-        value={code}
-        height="400px"
-        extensions={[javascript({ jsx: true })]}
-        onChange={handleChange}
-        ref={editorRef}
-        className="border rounded"
-      />
+      {!loading && (
+        <CodeMirror
+          value={code}
+          height="400px"
+          extensions={[javascript({ jsx: true })]}
+          onChange={handleChange}
+          ref={editorRef}
+          className="border rounded"
+        />
+      )}
     </div>
   );
 }

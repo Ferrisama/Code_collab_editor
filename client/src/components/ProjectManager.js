@@ -17,11 +17,16 @@ function ProjectManager({ user, setCurrentProject }) {
   const [newProjectName, setNewProjectName] = useState("");
   const [shareEmail, setShareEmail] = useState("");
   const [shareProjectId, setShareProjectId] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (!user) return;
 
     console.log("Current user email:", user.email); // Debug log
+
+    setLoading(true);
+    setError("");
 
     const db = getFirestore();
     const projectsRef = collection(db, "projects");
@@ -34,11 +39,13 @@ function ProjectManager({ user, setCurrentProject }) {
           id: doc.id,
           ...doc.data(),
         }));
-        console.log("Fetched projects:", projectList); // Debug log
         setProjects(projectList);
+        setLoading(false);
       },
-      (error) => {
-        console.error("Error fetching projects:", error);
+      (err) => {
+        console.error("Error fetching projects:", err);
+        setError("Failed to fetch projects. Please try again.");
+        setLoading(false);
       }
     );
 
@@ -48,6 +55,8 @@ function ProjectManager({ user, setCurrentProject }) {
   const createProject = async (e) => {
     e.preventDefault();
     if (newProjectName.trim() && user) {
+      setLoading(true);
+      setError("");
       try {
         const db = getFirestore();
         const newProject = await addDoc(collection(db, "projects"), {
@@ -56,27 +65,38 @@ function ProjectManager({ user, setCurrentProject }) {
           createdAt: new Date(),
           content: "",
         });
-        console.log("Created new project:", newProject.id); // Debug log
         setNewProjectName("");
         setCurrentProject({
           id: newProject.id,
           name: newProjectName,
           content: "",
         });
-      } catch (error) {
-        console.error("Error creating project:", error);
+      } catch (err) {
+        console.error("Error creating project:", err);
+        setError("Failed to create project. Please try again.");
       }
+      setLoading(false);
     }
   };
 
   const deleteProject = async (projectId) => {
-    const db = getFirestore();
-    await deleteDoc(doc(db, "projects", projectId));
+    setLoading(true);
+    setError("");
+    try {
+      const db = getFirestore();
+      await deleteDoc(doc(db, "projects", projectId));
+    } catch (err) {
+      console.error("Error deleting project:", err);
+      setError("Failed to delete project. Please try again.");
+    }
+    setLoading(false);
   };
 
   const shareProject = async (e) => {
     e.preventDefault();
     if (shareEmail && shareProjectId) {
+      setLoading(true);
+      setError("");
       try {
         const db = getFirestore();
         const projectRef = doc(db, "projects", shareProjectId);
@@ -84,30 +104,31 @@ function ProjectManager({ user, setCurrentProject }) {
 
         if (projectSnap.exists()) {
           const projectData = projectSnap.data();
-          console.log("Project data before sharing:", projectData); // Debug log
           if (!projectData.users.includes(shareEmail)) {
             await updateDoc(projectRef, {
               users: [...projectData.users, shareEmail],
             });
-            console.log("Project shared with:", shareEmail); // Debug log
+            setShareEmail("");
+            setShareProjectId("");
           } else {
-            console.log("User already has access to this project"); // Debug log
+            setError("This user already has access to the project.");
           }
         } else {
-          console.log("Project not found"); // Debug log
+          setError("Project not found.");
         }
-
-        setShareEmail("");
-        setShareProjectId("");
-      } catch (error) {
-        console.error("Error sharing project:", error);
+      } catch (err) {
+        console.error("Error sharing project:", err);
+        setError("Failed to share project. Please try again.");
       }
+      setLoading(false);
     }
   };
 
   return (
     <div className="bg-white p-6 rounded-lg shadow">
       <h2 className="text-xl font-bold mb-4 text-gray-800">Your Projects</h2>
+      {loading && <p className="text-gray-600">Loading...</p>}
+      {error && <p className="text-red-500 mb-4">{error}</p>}
       <ul className="space-y-2 mb-4">
         {projects.map((project) => (
           <li
@@ -123,6 +144,7 @@ function ProjectManager({ user, setCurrentProject }) {
             <button
               onClick={() => deleteProject(project.id)}
               className="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-sm transition duration-300"
+              disabled={loading}
             >
               Delete
             </button>
@@ -137,10 +159,12 @@ function ProjectManager({ user, setCurrentProject }) {
           placeholder="New Project Name"
           className="w-full p-2 border rounded mb-2"
           required
+          disabled={loading}
         />
         <button
           type="submit"
           className="w-full bg-blue-500 hover:bg-blue-600 text-white p-2 rounded transition duration-300"
+          disabled={loading}
         >
           Create Project
         </button>
@@ -150,6 +174,7 @@ function ProjectManager({ user, setCurrentProject }) {
           value={shareProjectId}
           onChange={(e) => setShareProjectId(e.target.value)}
           className="w-full p-2 border rounded mb-2"
+          disabled={loading}
         >
           <option value="">Select a project to share</option>
           {projects.map((project) => (
@@ -165,10 +190,12 @@ function ProjectManager({ user, setCurrentProject }) {
           placeholder="Email to share with"
           className="w-full p-2 border rounded mb-2"
           required
+          disabled={loading}
         />
         <button
           type="submit"
           className="w-full bg-green-500 hover:bg-green-600 text-white p-2 rounded transition duration-300"
+          disabled={loading}
         >
           Share Project
         </button>
