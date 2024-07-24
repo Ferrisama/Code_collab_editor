@@ -95,13 +95,15 @@ function CollaborativeEditor({ user, project }) {
   }, [users, user.uid]);
 
   return (
-    <div>
-      <h2 className="text-2xl font-bold mb-4">{project.name}</h2>
+    <div className="bg-white p-6 rounded-lg shadow">
+      <h2 className="text-2xl font-bold mb-4 text-gray-800">{project.name}</h2>
       <div className="mb-4">
-        <h3 className="text-lg font-semibold">Active Users:</h3>
-        <ul>
+        <h3 className="text-lg font-semibold text-gray-700">Active Users:</h3>
+        <ul className="list-disc list-inside">
           {users.map((user) => (
-            <li key={user.id}>{user.email}</li>
+            <li key={user.id} className="text-gray-600">
+              {user.email}
+            </li>
           ))}
         </ul>
       </div>
@@ -110,8 +112,8 @@ function CollaborativeEditor({ user, project }) {
         height="400px"
         extensions={[javascript({ jsx: true })]}
         onChange={handleChange}
-        onCursor={handleCursorActivity}
         ref={editorRef}
+        className="border rounded"
       />
     </div>
   );

@@ -29,38 +29,59 @@ function App() {
 
   if (!user) {
     return (
-      <div className="container mx-auto p-4">
-        <h1 className="text-3xl font-bold mb-4">Collaborative Code Editor</h1>
-        <div className="flex space-x-4">
-          <Login />
-          <Register />
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
+          <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">
+            Collaborative Code Editor
+          </h1>
+          <div className="space-y-4">
+            <Login />
+            <div className="text-center text-gray-600">or</div>
+            <Register />
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-4">Collaborative Code Editor</h1>
-      <p>Logged in as: {user.email}</p>
-      <div className="flex">
-        <div className="w-1/4 pr-4">
-          <ProjectManager user={user} setCurrentProject={setCurrentProject} />
+    <div className="min-h-screen bg-gray-100">
+      <header className="bg-white shadow">
+        <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
+          <h1 className="text-2xl font-bold text-gray-800">
+            Collaborative Code Editor
+          </h1>
+          <div className="flex items-center">
+            <span className="mr-4 text-gray-600">
+              Logged in as: {user.email}
+            </span>
+            <button
+              onClick={handleLogout}
+              className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded transition duration-300"
+            >
+              Logout
+            </button>
+          </div>
         </div>
-        <div className="w-3/4">
-          {currentProject ? (
-            <CollaborativeEditor user={user} project={currentProject} />
-          ) : (
-            <p className="text-gray-500">Select a project to start editing</p>
-          )}
+      </header>
+      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div className="flex space-x-6">
+          <div className="w-1/3">
+            <ProjectManager user={user} setCurrentProject={setCurrentProject} />
+          </div>
+          <div className="w-2/3">
+            {currentProject ? (
+              <CollaborativeEditor user={user} project={currentProject} />
+            ) : (
+              <div className="bg-white p-6 rounded-lg shadow">
+                <p className="text-gray-600">
+                  Select a project to start editing
+                </p>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
-      <button
-        onClick={handleLogout}
-        className="mt-4 bg-red-500 text-white px-4 py-2 rounded"
-      >
-        Logout
-      </button>
+      </main>
     </div>
   );
 }
