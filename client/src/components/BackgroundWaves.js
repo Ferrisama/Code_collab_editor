@@ -13,8 +13,8 @@ const BackgroundWaves = () => {
     let count = 0;
 
     const SEPARATION = 100,
-      AMOUNTX = 40,
-      AMOUNTY = 60;
+      AMOUNTX = 140,
+      AMOUNTY = 100;
 
     function init() {
       scene = new THREE.Scene();
@@ -51,7 +51,7 @@ const BackgroundWaves = () => {
 
       material = new THREE.ShaderMaterial({
         uniforms: {
-          color: { value: new THREE.Color(darkMode ? 0xffffff : 0x000000) },
+          color: { value: new THREE.Color(darkMode ? 0x9fffff : 0x0001ff) },
         },
         vertexShader: `
           attribute float scale;
@@ -100,10 +100,10 @@ const BackgroundWaves = () => {
       for (let ix = 0; ix < AMOUNTX; ix++) {
         for (let iy = 0; iy < AMOUNTY; iy++) {
           positions[i + 1] =
-            Math.sin((ix + count) * 0.5) * 90 +
-            Math.sin((iy + count) * 0.5) * 90;
+            Math.sin((ix + count) * 0.1) * 90 +
+            Math.sin((iy + count) * 0.1) * 90;
           scales[i / 3] =
-            (Math.sin((ix + count) * 0.5) + 1) * 7 +
+            (Math.sin((ix + count) * 0.5) + 1) * 10 +
             (Math.sin((iy + count) * 0.5) + 1) * 7;
           i += 3;
         }
@@ -113,7 +113,7 @@ const BackgroundWaves = () => {
       particles.geometry.attributes.scale.needsUpdate = true;
 
       renderer.render(scene, camera);
-      count += 0.06;
+      count += 0.12;
     }
 
     init();

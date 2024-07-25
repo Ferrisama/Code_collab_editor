@@ -7,6 +7,7 @@ import ProjectManager from "./components/ProjectManager";
 import CollaborativeEditor from "./components/CollaborativeEditor";
 import { ThemeContext } from "./contexts/ThemeContext";
 import BackgroundWaves from "./components/BackgroundWaves";
+import LiveChat from "./components/LiveChat";
 
 function App() {
   const [user, setUser] = useState(null);
@@ -93,7 +94,7 @@ function App() {
           </header>
           <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
             {!user ? (
-              <div className="bg-white bg-opacity-90 dark:bg-gray-700 dark:bg-opacity-90 p-8 rounded-lg shadow-md">
+              <div className="bg-white dark:bg-gray-700 p-8 rounded-lg shadow-md">
                 <h2 className="text-2xl font-bold mb-4 text-gray-800 dark:text-white">
                   Welcome
                 </h2>
@@ -103,20 +104,22 @@ function App() {
                 </div>
               </div>
             ) : (
-              <div className="flex space-x-6">
-                <div className="w-1/3">
+              <div className="flex flex-col md:flex-row space-y-6 md:space-y-0 md:space-x-6">
+                <div className="w-full md:w-1/3 space-y-6">
                   <ProjectManager
                     user={user}
                     setCurrentProject={setCurrentProject}
                   />
+                  <LiveChat user={user} projectId={currentProject?.id} />
                 </div>
-                <div className="w-2/3">
+                <div className="w-full md:w-2/3">
                   {currentProject ? (
-                    <CollaborativeEditor
-                      user={user}
-                      project={currentProject}
-                      key={darkMode ? "dark" : "light"}
-                    />
+                    <>
+                      <CollaborativeEditor
+                        user={user}
+                        project={currentProject}
+                      />
+                    </>
                   ) : (
                     <div className="bg-white bg-opacity-90 dark:bg-gray-700 dark:bg-opacity-90 p-6 rounded-lg shadow">
                       <p className="text-gray-600 dark:text-gray-300">

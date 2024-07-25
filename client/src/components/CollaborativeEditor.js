@@ -9,18 +9,36 @@ import {
 } from "firebase/firestore";
 import CodeMirror from "@uiw/react-codemirror";
 import { javascript } from "@codemirror/lang-javascript";
+import { python } from "@codemirror/lang-python";
+import { cpp } from "@codemirror/lang-cpp";
+import { java } from "@codemirror/lang-java";
+import { html } from "@codemirror/lang-html";
+import { css } from "@codemirror/lang-css";
+import { json } from "@codemirror/lang-json";
 import { EditorView } from "@codemirror/view";
 import { ThemeContext } from "../contexts/ThemeContext";
 import UserCursor from "./UserCursor";
 
+const languageMap = {
+  javascript,
+  python,
+  cpp,
+  java,
+  html,
+  css,
+  json,
+};
+
 function CollaborativeEditor({ user, project }) {
   const [code, setCode] = useState(project.content || "");
+  const [language, setLanguage] = useState(project.language || "javascript");
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [cursorPositions, setCursorPositions] = useState({});
   const editorRef = useRef(null);
   const { darkMode } = useContext(ThemeContext);
+  const markersRef = useRef({});
 
   useEffect(() => {
     const db = getFirestore();
@@ -32,6 +50,7 @@ function CollaborativeEditor({ user, project }) {
       (doc) => {
         if (doc.exists()) {
           setCode(doc.data().content || "");
+          setLanguage(doc.data().language || "javascript");
           setLoading(false);
         }
       },
@@ -120,6 +139,14 @@ function CollaborativeEditor({ user, project }) {
     }
   };
 
+  const handleLanguageChange = (e) => {
+    const newLanguage = e.target.value;
+    setLanguage(newLanguage);
+    const db = getFirestore();
+    const projectRef = doc(db, "projects", project.id);
+    updateDoc(projectRef, { language: newLanguage });
+  };
+
   const updateCursorPosition = (line, ch) => {
     const db = getFirestore();
     const userRef = doc(db, "projects", project.id, "users", user.uid);
@@ -176,24 +203,6 @@ function CollaborativeEditor({ user, project }) {
       const editor = editorRef.current.view;
       const markers = {};
 
-      Object.entries(cursorPositions).forEach(([userId, cursor]) => {
-        if (userId !== user.uid) {
-          const { line, ch } = cursor;
-          const pos = editor.coordsAtPos(
-            editor.state.doc.line(line + 1).from + ch
-          );
-          if (pos) {
-            const marker = document.createElement("div");
-            marker.className = "remote-cursor";
-            marker.style.left = `${pos.left}px`;
-            marker.style.top = `${pos.top}px`;
-            marker.setAttribute("title", cursor.email);
-            editor.dom.appendChild(marker);
-            markers[userId] = marker;
-          }
-        }
-      });
-
       return () => {
         Object.values(markers).forEach((marker) => marker.remove());
       };
@@ -224,6 +233,26 @@ function CollaborativeEditor({ user, project }) {
             </li>
           ))}
         </ul>
+      </div>
+      <div>
+        <label
+          htmlFor="language-select"
+          className="text-gray-700 dark:text-gray-300 mr-2"
+        >
+          Language:
+        </label>
+        <select
+          id="language-select"
+          value={language}
+          onChange={handleLanguageChange}
+          className="p-2 border rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-white"
+        >
+          {Object.keys(languageMap).map((lang) => (
+            <option key={lang} value={lang}>
+              {lang}
+            </option>
+          ))}
+        </select>
       </div>
       {!loading && (
         <>
