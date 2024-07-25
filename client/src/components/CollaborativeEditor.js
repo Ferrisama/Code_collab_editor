@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useContext } from "react";
 import {
   getFirestore,
   doc,
@@ -9,21 +9,23 @@ import {
 } from "firebase/firestore";
 import CodeMirror from "@uiw/react-codemirror";
 import { javascript } from "@codemirror/lang-javascript";
+import { EditorView } from "@codemirror/view";
+import { ThemeContext } from "../contexts/ThemeContext";
+import UserCursor from "./UserCursor";
 
 function CollaborativeEditor({ user, project }) {
   const [code, setCode] = useState(project.content || "");
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [cursorPositions, setCursorPositions] = useState({});
   const editorRef = useRef(null);
+  const { darkMode } = useContext(ThemeContext);
 
   useEffect(() => {
     const db = getFirestore();
     const projectRef = doc(db, "projects", project.id);
     const usersRef = collection(db, "projects", project.id, "users");
-
-    setLoading(true);
-    setError("");
 
     const unsubscribeProject = onSnapshot(
       projectRef,
@@ -40,24 +42,45 @@ function CollaborativeEditor({ user, project }) {
       }
     );
 
-    const unsubscribeUsers = onSnapshot(
-      usersRef,
-      (snapshot) => {
-        const activeUsers = snapshot.docs.map((doc) => doc.data());
-        setUsers(activeUsers);
-      },
-      (err) => {
-        console.error("Error fetching users:", err);
-      }
-    );
+    const unsubscribeUsers = onSnapshot(usersRef, (snapshot) => {
+      const activeUsers = snapshot.docs.map((doc) => doc.data());
+      setUsers(activeUsers);
 
-    // Set user presence
+      const cursors = {};
+      snapshot.docs.forEach((doc) => {
+        const userData = doc.data();
+        if (userData.id !== user.uid && userData.cursor) {
+          cursors[userData.id] = {
+            ...userData.cursor,
+            email: userData.email,
+          };
+        }
+      });
+      setCursorPositions(cursors);
+    });
+
+    const unsubscribeCursors = onSnapshot(usersRef, (snapshot) => {
+      const cursors = {};
+      snapshot.docs.forEach((doc) => {
+        const userData = doc.data();
+        if (userData.id !== user.uid && userData.cursor) {
+          cursors[userData.id] = {
+            ...userData.cursor,
+            email: userData.email,
+          };
+        }
+      });
+      setCursorPositions(cursors);
+    });
+
+    // Set user presence and initial cursor position
     setDoc(
       doc(usersRef, user.uid),
       {
         id: user.uid,
         email: user.email,
         lastSeen: new Date(),
+        cursor: { line: 0, ch: 0 },
       },
       { merge: true }
     );
@@ -66,33 +89,96 @@ function CollaborativeEditor({ user, project }) {
     return () => {
       unsubscribeProject();
       unsubscribeUsers();
-      updateDoc(doc(usersRef, user.uid), { lastSeen: null });
+      updateDoc(doc(usersRef, user.uid), { lastSeen: null, cursor: null });
     };
   }, [project.id, user]);
 
-  const handleChange = (value) => {
+  const handleChange = (value, viewUpdate) => {
     setCode(value);
     const db = getFirestore();
     const projectRef = doc(db, "projects", project.id);
     updateDoc(projectRef, { content: value });
+
+    // Update cursor position
+    const cursor = viewUpdate.state.selection.main.head;
+    const line = viewUpdate.state.doc.lineAt(cursor).number - 1;
+    const ch = cursor - viewUpdate.state.doc.line(line + 1).from;
+    updateCursorPosition(line, ch);
+
+    // Update cursor positions of other users
+    if (viewUpdate.view) {
+      const cursors = { ...cursorPositions };
+      Object.keys(cursors).forEach((userId) => {
+        const cursor = cursors[userId];
+        const pos = viewUpdate.state.doc.line(cursor.line + 1).from + cursor.ch;
+        const coords = viewUpdate.view.coordsAtPos(pos);
+        if (coords) {
+          cursors[userId] = { ...cursor, top: coords.top, left: coords.left };
+        }
+      });
+      setCursorPositions(cursors);
+    }
   };
 
-  const handleCursorActivity = (editor) => {
-    const cursor = editor.getCursor();
+  const updateCursorPosition = (line, ch) => {
     const db = getFirestore();
     const userRef = doc(db, "projects", project.id, "users", user.uid);
-    updateDoc(userRef, { cursor: { line: cursor.line, ch: cursor.ch } });
+    updateDoc(userRef, { cursor: { line, ch } });
   };
+
+  const editorTheme = EditorView.theme(
+    {
+      "&": {
+        backgroundColor: darkMode ? "#1F2937" : "#ffffff",
+        color: darkMode ? "#D1D5DB" : "#000000",
+      },
+      ".cm-gutters": {
+        backgroundColor: darkMode ? "#374151" : "#f3f4f6",
+        color: darkMode ? "#9CA3AF" : "#4B5563",
+        border: "none",
+      },
+      ".cm-activeLineGutter": {
+        backgroundColor: darkMode ? "#4B5563" : "#E5E7EB",
+      },
+      ".cm-activeLine": {
+        backgroundColor: darkMode ? "#374151" : "#F3F4F6",
+      },
+      ".cm-selectionMatch": {
+        backgroundColor: darkMode ? "#4B5563" : "#D1D5DB",
+      },
+      ".cm-cursor": {
+        borderLeftColor: darkMode ? "#D1D5DB" : "#000000",
+      },
+      ".cm-lineNumbers": {
+        color: darkMode ? "#9CA3AF" : "#4B5563",
+      },
+      ".cm-foldPlaceholder": {
+        backgroundColor: darkMode ? "#4B5563" : "#D1D5DB",
+        color: darkMode ? "#D1D5DB" : "#000000",
+      },
+    },
+    { dark: darkMode }
+  );
+
+  // Custom extension to display other users' cursors
+  const cursorExtension = EditorView.updateListener.of((update) => {
+    if (update.docChanged || update.selectionSet) {
+      const cursor = update.state.selection.main.head;
+      const line = update.state.doc.lineAt(cursor).number - 1;
+      const ch = cursor - update.state.doc.line(line + 1).from;
+      updateCursorPosition(line, ch);
+    }
+  });
 
   // Add this useEffect for cursor markers
   useEffect(() => {
-    if (editorRef.current) {
+    if (editorRef.current && editorRef.current.view) {
       const editor = editorRef.current.view;
       const markers = {};
 
-      users.forEach((user) => {
-        if (user.id !== user.uid && user.cursor) {
-          const { line, ch } = user.cursor;
+      Object.entries(cursorPositions).forEach(([userId, cursor]) => {
+        if (userId !== user.uid) {
+          const { line, ch } = cursor;
           const pos = editor.coordsAtPos(
             editor.state.doc.line(line + 1).from + ch
           );
@@ -101,9 +187,9 @@ function CollaborativeEditor({ user, project }) {
             marker.className = "remote-cursor";
             marker.style.left = `${pos.left}px`;
             marker.style.top = `${pos.top}px`;
-            marker.setAttribute("title", user.email);
+            marker.setAttribute("title", cursor.email);
             editor.dom.appendChild(marker);
-            markers[user.id] = marker;
+            markers[userId] = marker;
           }
         }
       });
@@ -112,32 +198,57 @@ function CollaborativeEditor({ user, project }) {
         Object.values(markers).forEach((marker) => marker.remove());
       };
     }
-  }, [users, user.uid]);
+  }, [cursorPositions, user.uid]);
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow">
-      <h2 className="text-2xl font-bold mb-4 text-gray-800">{project.name}</h2>
-      {loading && <p className="text-gray-600">Loading editor...</p>}
+    <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
+      <h2 className="text-2xl font-bold mb-4 text-gray-800 dark:text-white">
+        {project.name}
+      </h2>
+      {loading && (
+        <p className="text-gray-600 dark:text-gray-300">Loading editor...</p>
+      )}
       {error && <p className="text-red-500 mb-4">{error}</p>}
       <div className="mb-4">
-        <h3 className="text-lg font-semibold text-gray-700">Active Users:</h3>
+        <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300">
+          Active Users:
+        </h3>
         <ul className="list-disc list-inside">
           {users.map((user) => (
-            <li key={user.id} className="text-gray-600">
+            <li key={user.id} className="text-gray-600 dark:text-gray-400">
               {user.email}
+              {user.cursor &&
+                ` (Line: ${user.cursor.line + 1}, Column: ${
+                  user.cursor.ch + 1
+                })`}
             </li>
           ))}
         </ul>
       </div>
       {!loading && (
-        <CodeMirror
-          value={code}
-          height="400px"
-          extensions={[javascript({ jsx: true })]}
-          onChange={handleChange}
-          ref={editorRef}
-          className="border rounded"
-        />
+        <>
+          <CodeMirror
+            value={code}
+            height="400px"
+            extensions={[javascript({ jsx: true }), cursorExtension]}
+            onChange={handleChange}
+            ref={editorRef}
+            theme={editorTheme}
+            className="border rounded"
+            onCreateEditor={(view) => {
+              editorRef.current = { view };
+            }}
+          />
+          {Object.entries(cursorPositions).map(([userId, cursor]) => (
+            <UserCursor
+              key={userId}
+              top={cursor.top}
+              left={cursor.left}
+              color={`#${userId.slice(0, 6)}`}
+              name={cursor.email}
+            />
+          ))}
+        </>
       )}
     </div>
   );

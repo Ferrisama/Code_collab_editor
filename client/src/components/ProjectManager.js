@@ -125,19 +125,23 @@ function ProjectManager({ user, setCurrentProject }) {
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow">
-      <h2 className="text-xl font-bold mb-4 text-gray-800">Your Projects</h2>
-      {loading && <p className="text-gray-600">Loading...</p>}
+    <div className="bg-white dark:bg-gray-700 p-6 rounded-lg shadow">
+      <h2 className="text-xl font-bold mb-4 text-gray-800 dark:text-white">
+        Your Projects
+      </h2>
+      {loading && (
+        <p className="text-gray-600 dark:text-gray-300">Loading...</p>
+      )}
       {error && <p className="text-red-500 mb-4">{error}</p>}
       <ul className="space-y-2 mb-4">
         {projects.map((project) => (
           <li
             key={project.id}
-            className="flex justify-between items-center bg-gray-50 p-3 rounded"
+            className="flex justify-between items-center bg-gray-50 dark:bg-gray-600 p-3 rounded"
           >
             <span
               onClick={() => setCurrentProject(project)}
-              className="cursor-pointer hover:text-blue-600 transition duration-300"
+              className="cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition duration-300 text-gray-800 dark:text-white"
             >
               {project.name}
             </span>
@@ -157,7 +161,7 @@ function ProjectManager({ user, setCurrentProject }) {
           value={newProjectName}
           onChange={(e) => setNewProjectName(e.target.value)}
           placeholder="New Project Name"
-          className="w-full p-2 border rounded mb-2"
+          className="w-full p-2 border rounded mb-2 bg-white dark:bg-gray-600 text-gray-800 dark:text-white"
           required
           disabled={loading}
         />
@@ -173,7 +177,7 @@ function ProjectManager({ user, setCurrentProject }) {
         <select
           value={shareProjectId}
           onChange={(e) => setShareProjectId(e.target.value)}
-          className="w-full p-2 border rounded mb-2"
+          className="w-full p-2 border rounded mb-2 bg-white dark:bg-gray-600 text-gray-800 dark:text-white"
           disabled={loading}
         >
           <option value="">Select a project to share</option>
@@ -188,7 +192,7 @@ function ProjectManager({ user, setCurrentProject }) {
           value={shareEmail}
           onChange={(e) => setShareEmail(e.target.value)}
           placeholder="Email to share with"
-          className="w-full p-2 border rounded mb-2"
+          className="w-full p-2 border rounded mb-2 bg-white dark:bg-gray-600 text-gray-800 dark:text-white"
           required
           disabled={loading}
         />

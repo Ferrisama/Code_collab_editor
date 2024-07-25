@@ -2,19 +2,18 @@
   position: absolute;
   width: 2px;
   height: 20px;
-  background-color: #f00;
-  z-index: 1;
+  background-color: currentColor;
 }
 
 .remote-cursor::after {
   content: attr(title);
   position: absolute;
-  left: 0;
   top: -20px;
-  font-size: 12px;
-  background-color: #f00;
+  left: 0;
+  background-color: currentColor;
   color: white;
   padding: 2px 4px;
   border-radius: 2px;
+  font-size: 12px;
   white-space: nowrap;
 }
