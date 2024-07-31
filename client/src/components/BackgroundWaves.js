@@ -86,6 +86,7 @@ const BackgroundWaves = () => {
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
     }
+    window.addEventListener("resize", onWindowResize, false);
 
     function animate() {
       requestAnimationFrame(animate);
