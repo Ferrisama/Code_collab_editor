@@ -51,7 +51,7 @@ const BackgroundWaves = () => {
 
       material = new THREE.ShaderMaterial({
         uniforms: {
-          color: { value: new THREE.Color(darkMode ? 0x9fffff : 0x0001ff) },
+          color: { value: new THREE.Color(darkMode ? 0x9fffff : 0x001bff) },
         },
         vertexShader: `
           attribute float scale;
@@ -65,7 +65,7 @@ const BackgroundWaves = () => {
           uniform vec3 color;
           void main() {
             if (length(gl_PointCoord - vec2(0.5, 0.5)) > 0.475) discard;
-            gl_FragColor = vec4(color, 1.0);
+            gl_FragColor = vec4(color, 0.8);
           }
         `,
       });
@@ -75,7 +75,7 @@ const BackgroundWaves = () => {
 
       renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
       renderer.setSize(window.innerWidth, window.innerHeight);
-      renderer.setClearColor(darkMode ? 0x000000 : 0xffffff, 1);
+      renderer.setClearColor(darkMode ? 0x000000 : 0xffffff, 0);
       mountRef.current.appendChild(renderer.domElement);
 
       window.addEventListener("resize", onWindowResize, false);
@@ -140,7 +140,7 @@ const BackgroundWaves = () => {
         zIndex: -1,
         background: darkMode
           ? "black"
-          : "linear-gradient(to right, red, #f06d06)",
+          : "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 200%)",
       }}
     />
   );
