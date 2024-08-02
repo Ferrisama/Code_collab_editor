@@ -13,12 +13,13 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: process.env.REACT_APP_API_URL || "http://localhost:3000",
+    origin: "*", // Allow all origins
     methods: ["GET", "POST"],
   },
 });
 
 const PORT = process.env.PORT || 5001;
+const HOST = "0.0.0.0"; // Listen on all available network interfaces
 
 app.use(cors());
 app.use(express.json());
