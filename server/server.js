@@ -58,9 +58,8 @@ io.on("connection", (socket) => {
   // TODO: Implement video chat socket events
 });
 
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`API URL: ${process.env.REACT_APP_API_URL}`);
+server.listen(PORT, HOST, () => {
+  console.log(`Server running on http://${HOST}:${PORT}`);
 });
 
 // Graceful shutdown
