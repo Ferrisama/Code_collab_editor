@@ -4,4 +4,4 @@ node_modules/
    dist/
    .DS_Store
    *.log
-   collab-code-editor-3963c-firebase-adminsdk-alpj9-d561fa3ed6.json
+echo "collab-code-editor-3963c-firebase-adminsdk-alpj9-d561fa3ed6.json" >> .gitignorecollab-code-editor-3963c-firebase-adminsdk-alpj9-d561fa3ed6.json
