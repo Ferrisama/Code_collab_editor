@@ -38,7 +38,7 @@ function CollaborativeEditor({ user, project }) {
   const [cursorPositions, setCursorPositions] = useState({});
   const editorRef = useRef(null);
   const { darkMode } = useContext(ThemeContext);
-  const markersRef = useRef({});
+  //const markersRef = useRef({});
 
   useEffect(() => {
     const db = getFirestore();
@@ -78,19 +78,23 @@ function CollaborativeEditor({ user, project }) {
       setCursorPositions(cursors);
     });
 
-    const unsubscribeCursors = onSnapshot(usersRef, (snapshot) => {
-      const cursors = {};
-      snapshot.docs.forEach((doc) => {
-        const userData = doc.data();
-        if (userData.id !== user.uid && userData.cursor) {
-          cursors[userData.id] = {
-            ...userData.cursor,
-            email: userData.email,
-          };
-        }
+    {
+      /*
+      const unsubscribeCursors = onSnapshot(usersRef, (snapshot) => {
+        const cursors = {};
+        snapshot.docs.forEach((doc) => {
+          const userData = doc.data();
+          if (userData.id !== user.uid && userData.cursor) {
+            cursors[userData.id] = {
+              ...userData.cursor,
+              email: userData.email,
+            };
+          }
+        });
+        setCursorPositions(cursors);
       });
-      setCursorPositions(cursors);
-    });
+    */
+    }
 
     // Set user presence and initial cursor position
     setDoc(
@@ -200,7 +204,7 @@ function CollaborativeEditor({ user, project }) {
   // Add this useEffect for cursor markers
   useEffect(() => {
     if (editorRef.current && editorRef.current.view) {
-      const editor = editorRef.current.view;
+      //const editor = editorRef.current.view;
       const markers = {};
 
       return () => {
