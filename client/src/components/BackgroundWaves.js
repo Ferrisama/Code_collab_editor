@@ -8,6 +8,7 @@ const BackgroundWaves = () => {
   const { darkMode } = useContext(ThemeContext);
 
   useEffect(() => {
+    const mount = mountRef.current;
     let scene, camera, renderer;
     let particles, geometry, material;
     let count = 0;
@@ -30,7 +31,6 @@ const BackgroundWaves = () => {
       const positions = [];
       const scales = [];
 
-      let i = 0;
       for (let ix = 0; ix < AMOUNTX; ix++) {
         for (let iy = 0; iy < AMOUNTY; iy++) {
           positions.push(ix * SEPARATION - (AMOUNTX * SEPARATION) / 2);
@@ -122,7 +122,9 @@ const BackgroundWaves = () => {
 
     return () => {
       window.removeEventListener("resize", onWindowResize);
-      mountRef.current.removeChild(renderer.domElement);
+      if (mount) {
+        mount.removeChild(renderer.domElement);
+      }
       geometry.dispose();
       material.dispose();
       renderer.dispose();

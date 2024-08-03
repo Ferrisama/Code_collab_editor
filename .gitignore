@@ -9,3 +9,4 @@ collab-code-editor-3963c-firebase-adminsdk-alpj9-d561fa3ed6.json
 echo "*firebase-adminsdk*.json" >> .gitignore
 *firebase-adminsdk*.json
 collab-code-editor-3963c-firebase-adminsdk-alpj9-d561fa3ed6.json
+.env
