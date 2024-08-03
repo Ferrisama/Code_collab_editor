@@ -78,24 +78,6 @@ function CollaborativeEditor({ user, project }) {
       setCursorPositions(cursors);
     });
 
-    {
-      /*
-      const unsubscribeCursors = onSnapshot(usersRef, (snapshot) => {
-        const cursors = {};
-        snapshot.docs.forEach((doc) => {
-          const userData = doc.data();
-          if (userData.id !== user.uid && userData.cursor) {
-            cursors[userData.id] = {
-              ...userData.cursor,
-              email: userData.email,
-            };
-          }
-        });
-        setCursorPositions(cursors);
-      });
-    */
-    }
-
     // Set user presence and initial cursor position
     setDoc(
       doc(usersRef, user.uid),
